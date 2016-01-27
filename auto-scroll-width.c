@@ -112,7 +112,7 @@ update_hscrollbar (ScintillaObject *sci)
 #endif /* AUTOHIDE */
 }
 
-static void
+static gboolean
 on_editor_notify (GObject        *obj,
                   GeanyEditor    *editor,
                   SCNotification *nt,
@@ -121,6 +121,8 @@ on_editor_notify (GObject        *obj,
   if (nt->nmhdr.code == SCN_UPDATEUI) {
     update_hscrollbar (editor->sci);
   }
+  
+  return FALSE;
 }
 
 static gboolean
