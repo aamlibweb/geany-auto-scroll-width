@@ -17,11 +17,11 @@
 /*
  * TODO:
  *  * optimize! (how?)
- *  * hide the bottom scrollbar if it's not useful
+ *  * add a setting whether to hide the bottom scrollbar automatically
  *  * fix width on startup?
  */
 
-#define AUTOHIDE 0 /* currently buggy */
+#define AUTOHIDE 1
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -95,22 +95,25 @@ update_hscrollbar (ScintillaObject *sci)
   gint width = get_longest_line_width (sci);
   
   SSM (sci, SCI_SETSCROLLWIDTH, MAX (1, width), 0);
-  
+}
+
 #if AUTOHIDE
+static void
+update_hscrollbar_visibility (ScintillaObject *sci)
 {
   GtkWidget *widget = get_text_widget (sci);
   gint alloc_w = gtk_widget_get_allocated_width (widget);
   gint margin = get_margins_width (sci);
+  gint width = (gint) SSM (sci, SCI_GETSCROLLWIDTH, 0, 0);
   
   if (margin + width > alloc_w) {
     SSM (sci, SCI_SETHSCROLLBAR, 1, 0);
-  } else {
+  } else if (SSM (sci, SCI_GETHSCROLLBAR, 0, 0)) {
     SSM (sci, SCI_SETHSCROLLBAR, 0, 0);
     SSM (sci, SCI_SETXOFFSET, 0, 0);
   }
 }
 #endif /* AUTOHIDE */
-}
 
 static gboolean
 on_editor_notify (GObject        *obj,
@@ -121,6 +124,12 @@ on_editor_notify (GObject        *obj,
   if (nt->nmhdr.code == SCN_UPDATEUI) {
     update_hscrollbar (editor->sci);
   }
+#if AUTOHIDE
+  else if (nt->nmhdr.code == SCN_PAINTED) {
+    /* also update scrollbar visibility when editor size changes */
+    update_hscrollbar_visibility (editor->sci);
+  }
+#endif
   
   return FALSE;
 }
